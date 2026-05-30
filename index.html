@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>💕 我们的小世界</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    /* ===== CSS Variables ===== */
+    :root {
+      --pink:       #FFB3C6;
+      --pink-deep:  #FF85A1;
+      --pink-light: #FFDDE6;
+      --cream:      #FFF5EE;
+      --cream2:     #FFF0E6;
+      --yellow:     #FFE4A0;
+      --mint:       #C8F0E4;
+      --lavender:   #E2D4F0;
+      --text:       #5C3D52;
+      --text-light: #9B7B8C;
+      --white:      #FFFFFF;
+      --shadow:     0 4px 20px rgba(255, 133, 161, 0.15);
+      --shadow-card:0 2px 12px rgba(255, 133, 161, 0.12);
+      --radius:     20px;
+      --radius-sm:  12px;
+      --nav-h:      68px;
+    }
+
+    /* ===== Reset & Base ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    input, textarea, select { font-family: inherit; }
+    img { max-width: 100%; object-fit: cover; }
+
+    /* ===== App Shell ===== */
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: var(--cream);
+      position: relative;
+      padding-bottom: var(--nav-h);
+    }
+
+    /* ===== Top Deco Bar ===== */
+    .deco-bar {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, var(--pink), var(--yellow), var(--mint), var(--lavender), var(--pink));
+      background-size: 300% 100%;
+      animation: gradShift 6s linear infinite;
+    }
+    @keyframes gradShift {
+      0%   { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+
+    /* ===== Pages ===== */
+    .page { display: none; padding: 20px 16px; animation: fadeIn .35s ease; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ===== Bottom Nav ===== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      height: var(--nav-h);
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      border-top: 1.5px solid var(--pink-light);
+      box-shadow: 0 -4px 20px rgba(255, 133, 161, 0.1);
+      z-index: 100;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      transition: all .2s;
+      flex: 1;
+    }
+    .nav-item .nav-icon { font-size: 22px; transition: transform .2s; }
+    .nav-item .nav-label { font-size: 10px; color: var(--text-light); transition: color .2s; }
+    .nav-item.active .nav-icon { transform: scale(1.2); }
+    .nav-item.active .nav-label { color: var(--pink-deep); font-weight: 700; }
+
+    /* ===== Cards ===== */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 14px;
+    }
+    .card-pink { background: linear-gradient(135deg, #FFF0F5, #FFE6EF); }
+    .card-yellow { background: linear-gradient(135deg, #FFFBF0, #FFF3D0); }
+    .card-mint { background: linear-gradient(135deg, #F0FFFA, #D8F8ED); }
+    .card-lavender { background: linear-gradient(135deg, #F8F0FF, #EDE0FF); }
+
+    /* ===== Section Title ===== */
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1.5px;
+      background: linear-gradient(90deg, var(--pink-light), transparent);
+      border-radius: 2px;
+    }
+
+    /* ===== Pill / Tag ===== */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--pink-light);
+      color: var(--pink-deep);
+      gap: 3px;
+    }
+    .tag.mint { background: var(--mint); color: #2A9D6E; }
+    .tag.yellow { background: var(--yellow); color: #9D6B2A; }
+    .tag.lavender { background: var(--lavender); color: #6B4DAD; }
+
+    /* ===== Floating Action Button ===== */
+    .fab {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 16px);
+      right: calc(50% - 240px + 16px);
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--pink-deep), #FF5C8A);
+      color: white;
+      font-size: 26px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(255, 85, 130, 0.45);
+      z-index: 99;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .fab:active { transform: scale(.92); }
+    .fab.hidden { display: none; }
+    @media (max-width: 480px) {
+      .fab { right: 16px; }
+    }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(92, 61, 82, 0.35);
+      backdrop-filter: blur(3px);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white);
+      border-radius: var(--radius) var(--radius) 0 0;
+      padding: 24px 20px 32px;
+      width: 100%; max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp .3s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-title {
+      font-size: 17px; font-weight: 700; color: var(--text);
+      text-align: center; margin-bottom: 20px;
+    }
+    .modal-handle {
+      width: 36px; height: 4px;
+      background: var(--pink-light);
+      border-radius: 99px;
+      margin: 0 auto 16px;
+    }
+
+    /* ===== Form Fields ===== */
+    .field { margin-bottom: 14px; }
+    .field label { font-size: 13px; font-weight: 600; color: var(--text-light); display: block; margin-bottom: 6px; }
+    .field input, .field textarea, .field select {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--pink-light);
+      border-radius: var(--radius-sm);
+      font-size: 14px; color: var(--text);
+      background: var(--cream);
+      outline: none;
+      transition: border-color .2s;
+      resize: none;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--pink-deep); }
+    .field textarea { min-height: 80px; }
+
+    /* ===== Btn ===== */
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: var(--radius-sm);
+      font-size: 15px; font-weight: 700;
+      background: linear-gradient(135deg, var(--pink-deep), #FF5C8A);
+      color: white;
+      box-shadow: 0 3px 12px rgba(255, 85, 130, .35);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn.secondary {
+      background: var(--pink-light);
+      color: var(--pink-deep);
+      box-shadow: none;
+    }
+
+    /* ============================================================
+       PAGE 1: HOME
+    ============================================================ */
+    .home-hero {
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, #FFD6E7, #FFEEF5, #FFD6E7);
+      padding: 32px 20px 28px;
+      text-align: center;
+      margin-bottom: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .home-hero::before {
+      content: '✿ ❀ ✿ ❀ ✿ ❀ ✿ ❀ ✿ ❀ ✿ ❀';
+      position: absolute;
+      top: 8px; left: 0; right: 0;
+      font-size: 11px; color: rgba(255,133,161,.35);
+      letter-spacing: 2px;
+    }
+    .hero-emoji { font-size: 52px; margin-bottom: 8px; animation: heartBeat 2s ease-in-out infinite; }
+    @keyframes heartBeat {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.12); }
+    }
+    .hero-subtitle { font-size: 13px; color: var(--text-light); margin-bottom: 4px; }
+    .hero-days { font-size: 56px; font-weight: 700; color: var(--pink-deep); line-height: 1; }
+    .hero-unit { font-size: 18px; color: var(--text-light); margin-top: 4px; }
+    .hero-date { font-size: 12px; color: var(--text-light); margin-top: 10px; }
+
+    /* Progress ring */
+    .ring-wrap { display: flex; justify-content: center; margin: 20px 0 4px; }
+    .ring-text { font-size: 11px; color: var(--text-light); text-align: center; margin-top: 2px; }
+
+    /* Stats row */
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .stat-card {
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      padding: 12px 8px;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+    }
+    .stat-card .stat-emoji { font-size: 20px; }
+    .stat-card .stat-num { font-size: 20px; font-weight: 700; color: var(--pink-deep); line-height: 1.2; }
+    .stat-card .stat-lbl { font-size: 10px; color: var(--text-light); }
+
+    /* Quote card */
+    .quote-card {
+      background: linear-gradient(135deg, #FFF0F8, #FFE6F0);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      text-align: center;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .quote-mark { font-size: 36px; color: var(--pink-light); position: absolute; top: 6px; left: 12px; line-height: 1; }
+    .quote-text { font-size: 14px; color: var(--text); line-height: 1.7; padding: 0 18px; font-style: italic; }
+    .quote-author { font-size: 11px; color: var(--text-light); margin-top: 8px; }
+
+    /* ============================================================
+       PAGE 2: DAILY
+    ============================================================ */
+    .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-btn {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 12px; font-weight: 600;
+      border: 1.5px solid var(--pink-light);
+      color: var(--text-light);
+      background: var(--white);
+      transition: all .2s;
+    }
+    .filter-btn.active { background: var(--pink-deep); color: white; border-color: var(--pink-deep); }
+
+    .daily-item {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 12px;
+      display: flex; gap: 12px;
+    }
+    .daily-date-box {
+      flex-shrink: 0;
+      width: 44px;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      background: var(--pink-light);
+      border-radius: var(--radius-sm);
+      padding: 6px 4px;
+    }
+    .daily-date-box .dd { font-size: 20px; font-weight: 700; color: var(--pink-deep); line-height: 1; }
+    .daily-date-box .mm { font-size: 10px; color: var(--text-light); }
+    .daily-content { flex: 1; }
+    .daily-text { font-size: 14px; line-height: 1.65; color: var(--text); margin-bottom: 8px; }
+    .daily-img { width: 100%; border-radius: 10px; margin-top: 8px; max-height: 200px; }
+    .daily-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+    .empty-state {
+      text-align: center; padding: 40px 20px;
+      color: var(--text-light); font-size: 14px;
+    }
+    .empty-state .empty-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
+
+    /* ============================================================
+       PAGE 3: ANNIVERSARY
+    ============================================================ */
+    .anni-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 20px 18px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 14px;
+    }
+    .anni-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .anni-icon { font-size: 28px; }
+    .anni-info { flex: 1; }
+    .anni-name { font-size: 15px; font-weight: 700; color: var(--text); }
+    .anni-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+    .anni-countdown {
+      font-size: 28px; font-weight: 700; color: var(--pink-deep);
+      text-align: right; line-height: 1;
+    }
+    .anni-countdown span { font-size: 12px; font-weight: 400; color: var(--text-light); display: block; }
+
+    /* Progress bar */
+    .progress-wrap { margin-top: 10px; }
+    .progress-info { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-light); margin-bottom: 5px; }
+    .progress-bar { height: 8px; background: var(--pink-light); border-radius: 99px; overflow: hidden; }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--pink), var(--pink-deep));
+      border-radius: 99px;
+      transition: width 1s ease;
+    }
+
+    .add-anni-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 2px dashed var(--pink-light);
+      color: var(--text-light);
+      font-size: 14px;
+      background: transparent;
+      transition: all .2s;
+    }
+    .add-anni-btn:hover { border-color: var(--pink-deep); color: var(--pink-deep); }
+
+    /* ============================================================
+       PAGE 4: WISHES
+    ============================================================ */
+    .wish-tabs {
+      display: flex;
+      background: var(--pink-light);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+    .wish-tab {
+      flex: 1;
+      padding: 8px;
+      border-radius: 9px;
+      font-size: 13px; font-weight: 600;
+      color: var(--text-light);
+      text-align: center;
+      transition: all .2s;
+    }
+    .wish-tab.active { background: var(--white); color: var(--pink-deep); box-shadow: 0 2px 8px rgba(255,133,161,.2); }
+
+    .wish-item {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 10px;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .wish-item .wish-check {
+      width: 22px; height: 22px; flex-shrink: 0;
+      border-radius: 50%;
+      border: 2px solid var(--pink);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      background: var(--pink-light);
+      color: var(--pink-deep);
+      transition: all .2s;
+      cursor: pointer;
+    }
+    .wish-item.done .wish-check { background: var(--pink-deep); border-color: var(--pink-deep); color: white; }
+    .wish-item .wish-body { flex: 1; }
+    .wish-item .wish-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; }
+    .wish-item.done .wish-title { text-decoration: line-through; color: var(--text-light); }
+    .wish-item .wish-meta { font-size: 11px; color: var(--text-light); margin-top: 4px; display: flex; gap: 8px; align-items: center; }
+
+    /* ============================================================
+       PAGE 5: MEMORIES
+    ============================================================ */
+    .memory-toggle {
+      display: flex; gap: 8px; margin-bottom: 16px;
+    }
+    .mem-toggle-btn {
+      flex: 1;
+      padding: 9px;
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600;
+      border: 1.5px solid var(--pink-light);
+      color: var(--text-light);
+      background: var(--white);
+      transition: all .2s;
+      text-align: center;
+    }
+    .mem-toggle-btn.active { background: var(--pink-deep); color: white; border-color: var(--pink-deep); }
+
+    /* Photo wall */
+    .photo-wall { columns: 2; gap: 10px; }
+    .photo-item {
+      break-inside: avoid;
+      margin-bottom: 10px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      position: relative;
+      background: var(--pink-light);
+      cursor: pointer;
+    }
+    .photo-item img { width: 100%; display: block; }
+    .photo-item .photo-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(92,61,82,.6), transparent);
+      opacity: 0;
+      transition: opacity .25s;
+      display: flex; align-items: flex-end; padding: 8px;
+    }
+    .photo-item:hover .photo-overlay { opacity: 1; }
+    .photo-item .photo-caption { font-size: 11px; color: white; font-weight: 600; }
+    .photo-delete {
+      position: absolute; top: 6px; right: 6px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(0,0,0,.45); color: white; border: none;
+      font-size: 12px; line-height: 24px; text-align: center;
+      cursor: pointer; opacity: 0; transition: opacity .2s;
+      z-index: 5;
+    }
+    .photo-item:hover .photo-delete { opacity: 1; }
+    .photo-delete:hover { background: var(--primary); }
+
+    /* Quote wall */
+    .quote-wall { display: flex; flex-direction: column; gap: 12px; }
+    .quote-wall-item {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow-card);
+      border-left: 4px solid var(--pink);
+    }
+    .quote-wall-item.yellow { border-color: #FFB347; }
+    .quote-wall-item.mint { border-color: #4DCBA2; }
+    .quote-wall-item.lavender { border-color: #9B77DB; }
+    .quote-wall-item .qw-text { font-size: 15px; color: var(--text); line-height: 1.75; font-style: italic; }
+    .quote-wall-item .qw-author { font-size: 12px; color: var(--text-light); margin-top: 8px; text-align: right; }
+
+    /* ===== Image preview placeholder ===== */
+    .img-placeholder {
+      width: 100%; aspect-ratio: 3/2;
+      background: var(--pink-light);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      cursor: pointer;
+    }
+
+    /* ===== Scrollbar Styling ===== */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--pink-light); border-radius: 4px; }
+
+    /* ===== Floating hearts deco ===== */
+    .hearts-deco {
+      pointer-events: none;
+      position: fixed;
+      bottom: calc(var(--nav-h) + 60px);
+      right: calc(50% - 240px + 70px);
+      font-size: 16px;
+      animation: floatUp 3s ease-in-out infinite;
+      opacity: .5;
+      z-index: 98;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(0) rotate(-10deg); opacity: .5; }
+      50%  { transform: translateY(-20px) rotate(10deg); opacity: .8; }
+      100% { transform: translateY(0) rotate(-10deg); opacity: .5; }
+    }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 20px);
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(92, 61, 82, .9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 99px;
+      font-size: 13px;
+      white-space: nowrap;
+      z-index: 500;
+      opacity: 0;
+      transition: all .3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- Deco top bar -->
+  <div class="deco-bar"></div>
+
+  <!-- ========== PAGE: HOME ========== -->
+  <div class="page active" id="page-home">
+    <div class="home-hero">
+      <div class="hero-emoji">💕</div>
+      <div class="hero-subtitle">我们已相爱</div>
+      <div class="hero-days" id="dayCount">0</div>
+      <div class="hero-unit">天</div>
+      <div class="hero-date" id="startDate">从 2023年6月10日 开始 💝</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-emoji">🌙</div>
+        <div class="stat-num" id="weekCount">0</div>
+        <div class="stat-lbl">周</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-emoji">🌸</div>
+        <div class="stat-num" id="monthCount">0</div>
+        <div class="stat-lbl">月</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-emoji">⭐</div>
+        <div class="stat-num" id="yearCount">0</div>
+        <div class="stat-lbl">年</div>
+      </div>
+    </div>
+
+    <!-- Ring progress: days to 1st anniversary -->
+    <div class="card card-pink" style="text-align:center;">
+      <div class="section-title" id="ringTitle">💫 距离一周年纪念日</div>
+      <div class="ring-wrap">
+        <svg width="110" height="110" viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r="46" fill="none" stroke="#FFE0EC" stroke-width="10"/>
+          <circle id="ringCircle" cx="55" cy="55" r="46" fill="none"
+            stroke="#FF85A1" stroke-width="10"
+            stroke-linecap="round"
+            stroke-dasharray="289"
+            stroke-dashoffset="289"
+            transform="rotate(-90 55 55)"
+            style="transition: stroke-dashoffset 1.2s ease;"/>
+          <text x="55" y="50" text-anchor="middle" fill="#FF85A1" font-size="22" font-weight="700" dy="0" id="ringDays">0</text>
+          <text x="55" y="68" text-anchor="middle" fill="#9B7B8C" font-size="11" dy="0">天后</text>
+        </svg>
+      </div>
+      <div class="ring-text" id="ringText">计算中…</div>
+    </div>
+
+    <!-- Today's quote -->
+    <div class="quote-card">
+      <div class="quote-mark">"</div>
+      <div class="quote-text" id="dailyQuote">你笑起来的样子，是我见过最美的风景。</div>
+      <div class="quote-author">— 每日一言 💌</div>
+    </div>
+
+    <!-- Next anniversary -->
+    <div class="section-title">🎀 下一个纪念日</div>
+    <div class="card" id="nextAnniCard" style="display:flex;align-items:center;gap:12px;">
+      <div style="font-size:32px;">🎂</div>
+      <div style="flex:1">
+        <div style="font-weight:700;color:var(--text);" id="nextAnniName">三周年纪念日</div>
+        <div style="font-size:12px;color:var(--text-light);margin-top:3px;" id="nextAnniDate">2026/06/10</div>
+      </div>
+      <div style="font-size:22px;font-weight:700;color:var(--pink-deep);" id="nextAnniDays">— 天</div>
+    </div>
+  </div>
+
+  <!-- ========== PAGE: DAILY ========== -->
+  <div class="page" id="page-daily">
+    <div class="section-title">📅 日常记录</div>
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" data-month="all">全部</button>
+    </div>
+    <div id="dailyList"></div>
+    <div class="empty-state" id="dailyEmpty">
+      <span class="empty-emoji">📝</span>
+      还没有记录，点击 + 号添加第一条吧～
+    </div>
+  </div>
+
+  <!-- ========== PAGE: ANNIVERSARY ========== -->
+  <div class="page" id="page-anniversary">
+    <div class="section-title">🎉 纪念日</div>
+    <div id="anniList"></div>
+    <button class="add-anni-btn" id="addAnniBtnPage">＋ 添加纪念日</button>
+  </div>
+
+  <!-- ========== PAGE: WISHES ========== -->
+  <div class="page" id="page-wishes">
+    <div class="section-title">✨ 心愿清单</div>
+    <div class="wish-tabs">
+      <div class="wish-tab active" id="tabPending" onclick="switchWishTab('pending')">💭 待实现</div>
+      <div class="wish-tab" id="tabDone" onclick="switchWishTab('done')">🌟 已实现</div>
+    </div>
+    <div id="wishPendingList"></div>
+    <div id="wishDoneList" style="display:none;"></div>
+    <div class="empty-state" id="wishEmpty">
+      <span class="empty-emoji">🌈</span>
+      快来许个心愿吧～
+    </div>
+  </div>
+
+  <!-- ========== PAGE: MEMORIES ========== -->
+  <div class="page" id="page-memories">
+    <div class="section-title">📸 我们的回忆</div>
+    <div class="memory-toggle">
+      <button class="mem-toggle-btn active" id="memBtnPhoto" onclick="switchMemView('photo')">🖼 照片墙</button>
+      <button class="mem-toggle-btn" id="memBtnQuote" onclick="switchMemView('quote')">💬 风景语录</button>
+    </div>
+    <div id="memPhotoView">
+      <div class="photo-wall" id="photoWall"></div>
+      <div class="empty-state" id="photoEmpty">
+        <span class="empty-emoji">📷</span>
+        快来上传你们的照片吧～
+      </div>
+    </div>
+    <div id="memQuoteView" style="display:none;">
+      <div class="quote-wall" id="quoteWall"></div>
+    </div>
+  </div>
+
+  <!-- ========== BOTTOM NAV ========== -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" data-page="home" onclick="goPage('home')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">首页</span>
+    </div>
+    <div class="nav-item" data-page="daily" onclick="goPage('daily')">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">日常</span>
+    </div>
+    <div class="nav-item" data-page="anniversary" onclick="goPage('anniversary')">
+      <span class="nav-icon">🎉</span>
+      <span class="nav-label">纪念日</span>
+    </div>
+    <div class="nav-item" data-page="wishes" onclick="goPage('wishes')">
+      <span class="nav-icon">✨</span>
+      <span class="nav-label">心愿</span>
+    </div>
+    <div class="nav-item" data-page="memories" onclick="goPage('memories')">
+      <span class="nav-icon">📸</span>
+      <span class="nav-label">回忆</span>
+    </div>
+  </nav>
+
+  <!-- FAB -->
+  <button class="fab" id="fabBtn" onclick="openAddModal()" title="添加记录">＋</button>
+  <div class="hearts-deco">💗</div>
+</div>
+
+<!-- ========== MODAL: ADD DAILY ========== -->
+<div class="modal-overlay" id="addDailyModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📝 添加日常记录</div>
+    <div class="field">
+      <label>日期</label>
+      <input type="date" id="dailyDateInput" />
+    </div>
+    <div class="field">
+      <label>心情标签</label>
+      <select id="dailyTagInput">
+        <option value="甜蜜">💕 甜蜜</option>
+        <option value="开心">😄 开心</option>
+        <option value="感动">🥹 感动</option>
+        <option value="搞笑">😂 搞笑</option>
+        <option value="约会">🌹 约会</option>
+        <option value="思念">💌 思念</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>内容</label>
+      <textarea id="dailyTextInput" placeholder="记录这一刻的美好…" rows="4"></textarea>
+    </div>
+    <div class="field">
+      <label>图片（可选）</label>
+      <input type="file" id="dailyImgInput" accept="image/*" style="padding:8px;" />
+    </div>
+    <button class="btn" onclick="saveDailyEntry()">💾 保存记录</button>
+    <button class="btn secondary" style="margin-top:10px;" onclick="closeModal('addDailyModal')">取消</button>
+  </div>
+</div>
+
+<!-- ========== MODAL: ADD ANNIVERSARY ========== -->
+<div class="modal-overlay" id="addAnniModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🎉 添加纪念日</div>
+    <div class="field">
+      <label>纪念日名称</label>
+      <input type="text" id="anniNameInput" placeholder="如：一周年纪念日" />
+    </div>
+    <div class="field">
+      <label>日期</label>
+      <input type="date" id="anniDateInput" />
+    </div>
+    <div class="field">
+      <label>图标</label>
+      <select id="anniIconInput">
+        <option value="🎂">🎂 生日蛋糕</option>
+        <option value="💍">💍 戒指</option>
+        <option value="🌹">🌹 玫瑰</option>
+        <option value="🎊">🎊 庆祝</option>
+        <option value="✈️">✈️ 旅行</option>
+        <option value="🏠">🏠 家</option>
+        <option value="💕">💕 爱心</option>
+        <option value="⭐">⭐ 星星</option>
+      </select>
+    </div>
+    <button class="btn" onclick="saveAnniversary()">💾 保存</button>
+    <button class="btn secondary" style="margin-top:10px;" onclick="closeModal('addAnniModal')">取消</button>
+  </div>
+</div>
+
+<!-- ========== MODAL: ADD WISH ========== -->
+<div class="modal-overlay" id="addWishModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✨ 许个心愿</div>
+    <div class="field">
+      <label>心愿内容</label>
+      <input type="text" id="wishTitleInput" placeholder="我们要一起……" />
+    </div>
+    <div class="field">
+      <label>标签分类</label>
+      <select id="wishTagInput">
+        <option value="娱乐">🎡 娱乐</option>
+        <option value="旅行">✈️ 旅行</option>
+        <option value="美食">🍜 美食</option>
+        <option value="购物">🛍 购物</option>
+        <option value="冒险">🧗 冒险</option>
+        <option value="温馨">🏡 温馨</option>
+        <option value="浪漫">🌹 浪漫</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>备注（可选）</label>
+      <textarea id="wishNoteInput" placeholder="补充说明…" rows="3"></textarea>
+    </div>
+    <button class="btn" onclick="saveWish()">💾 保存心愿</button>
+    <button class="btn secondary" style="margin-top:10px;" onclick="closeModal('addWishModal')">取消</button>
+  </div>
+</div>
+
+<!-- ========== MODAL: ADD MEMORY PHOTO ========== -->
+<div class="modal-overlay" id="addMemoryModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📸 添加回忆照片</div>
+    <div class="field">
+      <label>照片</label>
+      <input type="file" id="memImgInput" accept="image/*" style="padding:8px;" />
+    </div>
+    <div class="field">
+      <label>标题/说明</label>
+      <input type="text" id="memCaptionInput" placeholder="记录这一刻…" />
+    </div>
+    <button class="btn" onclick="saveMemoryPhoto()">💾 保存</button>
+    <button class="btn secondary" style="margin-top:10px;" onclick="closeModal('addMemoryModal')">取消</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   CONSTANTS & HELPERS
+========================================================= */
+const START_DATE = new Date('2023-06-10T00:00:00');
+
+function daysBetween(a, b) {
+  const ms = Math.abs(b - a);
+  return Math.floor(ms / 86400000);
+}
+
+function fmt(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function fmtCN(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* =========================================================
+   SUPABASE CLIENT
+========================================================= */
+const SUPABASE_URL = 'https://hsuscbwjrbwswyzizrek.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_VJIJlDKQXk64T-AR85gBdw_J0vhXQff';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ========= Supabase Storage helpers =========
+const BUCKET = 'love-photos';
+
+async function uploadImage(file) {
+  const ext = file.name.split('.').pop();
+  const fileName = `pics/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await sb.storage.from(BUCKET).upload(fileName, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (error) {
+    console.error('Upload error:', error);
+    // fallback: convert to base64
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    });
+  }
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+let currentPage = 'home';
+
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${name}"]`).classList.add('active');
+  currentPage = name;
+
+  const fabBtn = document.getElementById('fabBtn');
+  const heats = document.querySelector('.hearts-deco');
+  if (['daily','wishes','memories'].includes(name)) {
+    fabBtn.classList.remove('hidden');
+    heats.style.display = 'block';
+  } else {
+    fabBtn.classList.add('hidden');
+    heats.style.display = 'none';
+  }
+
+  if (name === 'daily') renderDailyList();
+  if (name === 'anniversary') renderAnniversary();
+  if (name === 'wishes') renderWishes();
+  if (name === 'memories') renderMemories();
+}
+
+/* =========================================================
+   HOME PAGE
+========================================================= */
+async function initHome() {
+  const now = new Date();
+  const days = daysBetween(START_DATE, now);
+
+  document.getElementById('dayCount').textContent = days;
+  document.getElementById('weekCount').textContent = Math.floor(days / 7);
+  document.getElementById('monthCount').textContent = Math.floor(days / 30);
+  document.getElementById('yearCount').textContent = parseFloat((days / 365).toFixed(1));
+
+  // Ring: progress to next anniversary (based on actual date 06-10 each year)
+  const startMonth = START_DATE.getMonth(); // 5 (June)
+  const startDay   = START_DATE.getDate();  // 10
+  // Find the most recent past anniversary and the next upcoming anniversary
+  let prevAnniv = new Date(now.getFullYear(), startMonth, startDay);
+  if (prevAnniv > now) prevAnniv.setFullYear(prevAnniv.getFullYear() - 1);
+  let nextAnniv = new Date(prevAnniv);
+  nextAnniv.setFullYear(nextAnniv.getFullYear() + 1);
+  const yearNum = prevAnniv.getFullYear() - START_DATE.getFullYear() + 1; // which anniversary year we're in
+  const totalDaysInPeriod = daysBetween(prevAnniv, nextAnniv);
+  const elapsedDays = daysBetween(prevAnniv, now);
+  const daysToAnniv = daysBetween(now, nextAnniv);
+  const pct = elapsedDays / totalDaysInPeriod;
+  const circ = 2 * Math.PI * 46; // ~289
+  document.getElementById('ringCircle').style.strokeDashoffset = circ * (1 - pct);
+  document.getElementById('ringDays').textContent = daysToAnniv;
+  document.getElementById('ringText').textContent =
+    `第 ${yearNum} 年已走过 ${Math.round(pct * 100)}%，再过 ${daysToAnniv} 天迎来 ${yearNum} 周年 🎊`;
+  document.getElementById('ringTitle').innerHTML = `💫 距离 ${yearNum} 周年纪念日`;
+
+  // Next anniversary card — get from Supabase or default
+  const { data: anniversaries } = await sb.from('anniversaries').select('*');
+  const upcomingList = (anniversaries || [])
+    .map(a => {
+      const d = new Date(a.date + 'T00:00:00');
+      const thisYear = new Date(now.getFullYear(), d.getMonth(), d.getDate());
+      if (thisYear < now) thisYear.setFullYear(now.getFullYear() + 1);
+      return { ...a, next: thisYear, diff: daysBetween(now, thisYear) };
+    })
+    .sort((a, b) => a.diff - b.diff);
+
+  if (upcomingList.length > 0) {
+    const n = upcomingList[0];
+    document.getElementById('nextAnniName').textContent = n.name;
+    document.getElementById('nextAnniDate').textContent = fmt(n.next).replace(/-/g, '/');
+    document.getElementById('nextAnniDays').textContent = n.diff + ' 天';
+  } else {
+    // default: compute next anniversary from START_DATE
+    const nm = START_DATE.getMonth(), nd = START_DATE.getDate();
+    let defNext = new Date(now.getFullYear(), nm, nd);
+    if (defNext <= now) defNext.setFullYear(defNext.getFullYear() + 1);
+    const defYearNum = defNext.getFullYear() - START_DATE.getFullYear();
+    document.getElementById('nextAnniName').textContent = `${defYearNum} 周年纪念日`;
+    document.getElementById('nextAnniDate').textContent = fmt(defNext).replace(/-/g, '/');
+    document.getElementById('nextAnniDays').textContent = daysBetween(now, defNext) + ' 天';
+  }
+
+  // Daily quotes pool
+  const quotes = [
+    '你笑起来的样子，是我见过最美的风景。',
+    '遇见你，是我最美好的意外。',
+    '每天都想和你说：今天的你也很可爱。',
+    '和你在一起，每一天都是节日。',
+    '你是我在这个世界上最喜欢的人。',
+    '爱你，是我做过最正确的事。',
+    '因为你，所以今天也要好好的。',
+    '想和你看很多次日落，一起变老。',
+    '我的每一个将来，都有你的名字。',
+    '世界那么大，我只想牵着你的手。',
+  ];
+  const idx = Math.floor(days % quotes.length);
+  document.getElementById('dailyQuote').textContent = quotes[idx];
+}
+
+/* =========================================================
+   DAILY PAGE
+========================================================= */
+let currentFilter = 'all';
+
+async function renderDailyList() {
+  const { data: entries } = await sb.from('daily_entries').select('*').order('date', { ascending: false });
+  const safeEntries = entries || [];
+  const list = document.getElementById('dailyList');
+  const empty = document.getElementById('dailyEmpty');
+
+  // Build month filter
+  const months = [...new Set(safeEntries.map(e => e.date.substring(0,7)))].sort().reverse();
+  const bar = document.getElementById('filterBar');
+  bar.innerHTML = '<button class="filter-btn' + (currentFilter==='all'?' active':'') + '" data-month="all" onclick="setFilter(\'all\')">全部</button>';
+  months.forEach(m => {
+    const [y, mo] = m.split('-');
+    const label = `${y}年${parseInt(mo)}月`;
+    bar.innerHTML += `<button class="filter-btn${currentFilter===m?' active':''}" data-month="${m}" onclick="setFilter('${m}')">${label}</button>`;
+  });
+
+  const filtered = currentFilter === 'all' ? safeEntries : safeEntries.filter(e => e.date.startsWith(currentFilter));
+  filtered.sort((a,b) => b.date.localeCompare(a.date));
+
+  if (filtered.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const tagColors = {
+    甜蜜: '', 开心: 'mint', 感动: 'lavender', 搞笑: 'yellow', 约会: '', 思念: 'lavender'
+  };
+  const tagEmoji = { 甜蜜:'💕', 开心:'😄', 感动:'🥹', 搞笑:'😂', 约会:'🌹', 思念:'💌' };
+
+  list.innerHTML = filtered.map(e => {
+    const d = new Date(e.date + 'T00:00:00');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = d.getMonth()+1 + '月';
+    const imgHtml = e.img_url
+      ? `<img class="daily-img" src="${e.img_url}" alt="日常图片" />`
+      : '';
+    const tc = tagColors[e.tag] || '';
+    return `
+      <div class="daily-item">
+        <div class="daily-date-box">
+          <div class="dd">${dd}</div>
+          <div class="mm">${mm}</div>
+        </div>
+        <div class="daily-content">
+          <div class="daily-text">${e.text}</div>
+          ${imgHtml}
+          <div class="daily-tags">
+            <span class="tag ${tc}">${tagEmoji[e.tag]||'💕'} ${e.tag}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function setFilter(month) {
+  currentFilter = month;
+  renderDailyList();
+}
+
+function openAddModal() {
+  if (currentPage === 'daily') {
+    document.getElementById('dailyDateInput').value = fmt(new Date());
+    openModal('addDailyModal');
+  } else if (currentPage === 'wishes') {
+    openModal('addWishModal');
+  } else if (currentPage === 'memories') {
+    openModal('addMemoryModal');
+  }
+}
+
+async function saveDailyEntry() {
+  const date = document.getElementById('dailyDateInput').value;
+  const text = document.getElementById('dailyTextInput').value.trim();
+  const tag  = document.getElementById('dailyTagInput').value;
+  const file = document.getElementById('dailyImgInput').files[0];
+
+  if (!date || !text) { showToast('请填写日期和内容 💌'); return; }
+
+  let imgUrl = '';
+  if (file) {
+    showToast('正在上传图片…');
+    imgUrl = await uploadImage(file);
+  }
+
+  const { error } = await sb.from('daily_entries').insert([{ date, text, tag, img_url: imgUrl }]);
+  if (error) { showToast('保存失败: ' + error.message); return; }
+
+  closeModal('addDailyModal');
+  document.getElementById('dailyTextInput').value = '';
+  document.getElementById('dailyImgInput').value = '';
+  await renderDailyList();
+  showToast('记录保存成功 💕');
+}
+
+/* =========================================================
+   ANNIVERSARY PAGE
+========================================================= */
+async function renderAnniversary() {
+  const { data: anniversaries } = await sb.from('anniversaries').select('*');
+  const safeList = anniversaries || [];
+  const now = new Date();
+  const list = document.getElementById('anniList');
+
+  if (safeList.length === 0) {
+    // Show default
+    const defaultAnni = [
+      { id:1, name:'恋爱纪念日', date:'2023-06-10', icon:'💕' },
+      { id:2, name:'三周年纪念日', date:'2026-06-10', icon:'🎂' },
+    ];
+    list.innerHTML = defaultAnni.map(a => anniCardHTML(a, now)).join('');
+    return;
+  }
+
+  list.innerHTML = safeList.map(a => anniCardHTML(a, now)).join('');
+}
+
+function anniCardHTML(a, now) {
+  const d = new Date(a.date + 'T00:00:00');
+  // Calculate next occurrence
+  const next = new Date(now.getFullYear(), d.getMonth(), d.getDate());
+  if (next <= now) next.setFullYear(now.getFullYear() + 1);
+  const diff = daysBetween(now, next);
+
+  // Progress in year
+  const yearStart = new Date(now.getFullYear(), d.getMonth(), d.getDate());
+  yearStart.setFullYear(now.getFullYear() - 1);
+  const yearEnd = new Date(yearStart);
+  yearEnd.setFullYear(yearStart.getFullYear() + 1);
+  const total = daysBetween(yearStart, yearEnd);
+  const elapsed = daysBetween(yearStart, now);
+  const pct = Math.min(100, Math.round((elapsed / total) * 100));
+
+  const isPast = diff === 0;
+  const label = isPast ? '🎊 就是今天！' : `还有 ${diff} 天`;
+
+  return `
+    <div class="anni-card">
+      <div class="anni-header">
+        <div class="anni-icon">${a.icon}</div>
+        <div class="anni-info">
+          <div class="anni-name">${a.name}</div>
+          <div class="anni-sub">${fmtCN(a.date)}</div>
+        </div>
+        <div class="anni-countdown">
+          ${isPast ? '🎉' : diff}
+          <span>${label}</span>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-info">
+          <span>已过去 ${pct}%</span>
+          <span>${fmtCN(fmt(next))}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+document.getElementById('addAnniBtnPage').onclick = () => {
+  document.getElementById('anniDateInput').value = fmt(new Date());
+  openModal('addAnniModal');
+};
+
+async function saveAnniversary() {
+  const name = document.getElementById('anniNameInput').value.trim();
+  const date = document.getElementById('anniDateInput').value;
+  const icon = document.getElementById('anniIconInput').value;
+  if (!name || !date) { showToast('请填写名称和日期 🎉'); return; }
+  const { error } = await sb.from('anniversaries').insert([{ name, date, icon }]);
+  if (error) { showToast('保存失败: ' + error.message); return; }
+  closeModal('addAnniModal');
+  document.getElementById('anniNameInput').value = '';
+  await renderAnniversary();
+  showToast('纪念日已添加 🎊');
+}
+
+/* =========================================================
+   WISHES PAGE
+========================================================= */
+let wishTab = 'pending';
+
+function switchWishTab(tab) {
+  wishTab = tab;
+  document.getElementById('tabPending').classList.toggle('active', tab === 'pending');
+  document.getElementById('tabDone').classList.toggle('active', tab === 'done');
+  renderWishes();
+}
+
+async function renderWishes() {
+  const { data: all } = await sb.from('wishes').select('*').order('id', { ascending: true });
+  const safeAll = all || [];
+  const pending = safeAll.filter(w => !w.done);
+  const done    = safeAll.filter(w => w.done);
+
+  const tagEmoji = {娱乐:'🎡',旅行:'✈️',美食:'🍜',购物:'🛍',冒险:'🧗',温馨:'🏡',浪漫:'🌹'};
+  const tagClass = {娱乐:'yellow',旅行:'mint',美食:'yellow',购物:'lavender',冒险:'mint',温馨:'',浪漫:''};
+
+  const renderList = (items, containerId) => {
+    const el = document.getElementById(containerId);
+    el.innerHTML = items.map(w => `
+      <div class="wish-item ${w.done?'done':''}" data-id="${w.id}">
+        <div class="wish-check" onclick="toggleWish(${w.id})">${w.done?'✓':''}</div>
+        <div class="wish-body">
+          <div class="wish-title">${w.title}</div>
+          <div class="wish-meta">
+            <span class="tag ${tagClass[w.tag]||''}">${tagEmoji[w.tag]||'✨'} ${w.tag}</span>
+            ${w.note ? `<span>${w.note}</span>` : ''}
+          </div>
+        </div>
+      </div>`).join('');
+  };
+
+  document.getElementById('wishPendingList').style.display = wishTab==='pending' ? 'block' : 'none';
+  document.getElementById('wishDoneList').style.display   = wishTab==='done'    ? 'block' : 'none';
+
+  const current = wishTab === 'pending' ? pending : done;
+  const empty = document.getElementById('wishEmpty');
+
+  if (wishTab === 'pending') {
+    renderList(pending, 'wishPendingList');
+    empty.style.display = pending.length === 0 ? 'block' : 'none';
+  } else {
+    renderList(done, 'wishDoneList');
+    empty.style.display = done.length === 0 ? 'block' : 'none';
+  }
+}
+
+async function toggleWish(id) {
+  // Get current state
+  const { data } = await sb.from('wishes').select('done').eq('id', id).single();
+  if (!data) return;
+  const newDone = !data.done;
+  const { error } = await sb.from('wishes').update({ done: newDone }).eq('id', id);
+  if (error) { showToast('操作失败'); return; }
+  await renderWishes();
+  showToast(newDone ? '心愿实现啦 🌟' : '已移回待实现 💭');
+}
+
+async function saveWish() {
+  const title = document.getElementById('wishTitleInput').value.trim();
+  const tag   = document.getElementById('wishTagInput').value;
+  const note  = document.getElementById('wishNoteInput').value.trim();
+  if (!title) { showToast('请填写心愿内容 ✨'); return; }
+  const { error } = await sb.from('wishes').insert([{ title, tag, note, done: false }]);
+  if (error) { showToast('保存失败: ' + error.message); return; }
+  closeModal('addWishModal');
+  document.getElementById('wishTitleInput').value = '';
+  document.getElementById('wishNoteInput').value = '';
+  await renderWishes();
+  showToast('心愿已许下 🌈');
+}
+
+/* =========================================================
+   MEMORIES PAGE
+========================================================= */
+let memView = 'photo';
+
+function switchMemView(view) {
+  memView = view;
+  document.getElementById('memBtnPhoto').classList.toggle('active', view==='photo');
+  document.getElementById('memBtnQuote').classList.toggle('active', view==='quote');
+  document.getElementById('memPhotoView').style.display = view==='photo' ? 'block' : 'none';
+  document.getElementById('memQuoteView').style.display = view==='quote' ? 'block' : 'none';
+  renderMemories();
+}
+
+async function renderMemories() {
+  if (memView === 'photo') {
+    const { data: photos } = await sb.from('memories').select('*').order('created_at', { ascending: false });
+    const safePhotos = photos || [];
+    const wall = document.getElementById('photoWall');
+    const empty = document.getElementById('photoEmpty');
+    if (safePhotos.length === 0) {
+      wall.innerHTML = '';
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      wall.innerHTML = safePhotos.map(p => `
+        <div class="photo-item" id="mem-${p.id}">
+          <img src="${p.img_url}" alt="${p.caption}" loading="lazy" />
+          <button class="photo-delete" onclick="deleteMemory(${p.id})" title="删除照片">✕</button>
+          <div class="photo-overlay">
+            <span class="photo-caption">${p.caption}</span>
+          </div>
+        </div>`).join('');
+    }
+  } else {
+    renderQuotes();
+  }
+}
+
+function renderQuotes() {
+  const defaultQuotes = [
+    { text:'你是我生命里最温柔的光，照亮了我走过的每一段路。', author:'—— 写给你', color:'' },
+    { text:'把你的手放进我的手，我们就是整个世界。', author:'—— 无名', color:'yellow' },
+    { text:'如果记忆是一片海，我愿意和你一起沉下去。', author:'—— 佚名', color:'mint' },
+    { text:'爱是一种选择，每天早晨醒来，我都选择爱你。', author:'—— 未知', color:'lavender' },
+    { text:'世间最美的事，不过是你在我身旁，岁月静好。', author:'—— 写给你', color:'' },
+    { text:'遇见你之后，我终于明白，所谓好天气就是和你在一起的每一天。', author:'—— 佚名', color:'yellow' },
+  ];
+  const wall = document.getElementById('quoteWall');
+  wall.innerHTML = defaultQuotes.map(q => `
+    <div class="quote-wall-item ${q.color}">
+      <div class="qw-text">${q.text}</div>
+      <div class="qw-author">${q.author}</div>
+    </div>`).join('');
+}
+
+async function saveMemoryPhoto() {
+  const file = document.getElementById('memImgInput').files[0];
+  const caption = document.getElementById('memCaptionInput').value.trim() || '美好时光';
+  if (!file) { showToast('请选择一张照片 📸'); return; }
+  showToast('正在上传照片…');
+  const imgUrl = await uploadImage(file);
+  const { error } = await sb.from('memories').insert([{ img_url: imgUrl, caption }]);
+  if (error) { showToast('保存失败: ' + error.message); return; }
+  closeModal('addMemoryModal');
+  document.getElementById('memImgInput').value = '';
+  document.getElementById('memCaptionInput').value = '';
+  await renderMemories();
+  showToast('照片已添加 💝');
+}
+
+async function deleteMemory(id) {
+  if (!confirm('确定要删除这张照片吗？')) return;
+  const { error } = await sb.from('memories').delete().eq('id', id);
+  if (error) { showToast('删除失败: ' + error.message); return; }
+  showToast('照片已删除 🗑️');
+  await renderMemories();
+}
+
+/* =========================================================
+   MODAL HELPERS
+========================================================= */
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => {
+    if (e.target === o) o.classList.remove('open');
+  });
+});
+
+/* =========================================================
+   INIT
+========================================================= */
+window.addEventListener('load', async () => {
+  initHome();
+  goPage('home');
+
+  // Pre-populate sample wishes if empty (only once)
+  const { data: existingWishes } = await sb.from('wishes').select('id').limit(1);
+  if (!existingWishes || existingWishes.length === 0) {
+    const samples = [
+      { title:'一起去海边看日落 🌅', tag:'旅行', note:'', done:false },
+      { title:'一起做一顿大餐 🍳', tag:'美食', note:'想做寿喜烧', done:false },
+      { title:'一起看一场演唱会 🎶', tag:'娱乐', note:'', done:false },
+      { title:'一起骑行十公里 🚴', tag:'冒险', note:'', done:true },
+    ];
+    await sb.from('wishes').insert(samples);
+  }
+});
+
+/* =========================================================
+   SUPABASE INTEGRATION COMPLETE
+   All data now lives in Supabase cloud database.
+   Tables: daily_entries, anniversaries, wishes, memories
+   Storage: love-photos bucket (for uploaded images)
+========================================================= */
+</script>
+</body>
+</html>
