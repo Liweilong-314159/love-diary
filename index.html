@@ -913,6 +913,7 @@ function goPage(name) {
 ========================================================= */
 async function initHome() {
   const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // midnight for date-only comparison
   const days = daysBetween(START_DATE, now);
 
   document.getElementById('dayCount').textContent = days;
@@ -925,7 +926,7 @@ async function initHome() {
   const startDay   = START_DATE.getDate();  // 10
   // Find the most recent past anniversary and the next upcoming anniversary
   let prevAnniv = new Date(now.getFullYear(), startMonth, startDay);
-  if (prevAnniv > now) prevAnniv.setFullYear(prevAnniv.getFullYear() - 1);
+  if (prevAnniv >= today) prevAnniv.setFullYear(prevAnniv.getFullYear() - 1); // >= so anniversary day counts as "just passed"
   let nextAnniv = new Date(prevAnniv);
   nextAnniv.setFullYear(nextAnniv.getFullYear() + 1);
   const yearNum = prevAnniv.getFullYear() - START_DATE.getFullYear() + 1; // which anniversary year we're in
@@ -936,9 +937,14 @@ async function initHome() {
   const circ = 2 * Math.PI * 46; // ~289
   document.getElementById('ringCircle').style.strokeDashoffset = circ * (1 - pct);
   document.getElementById('ringDays').textContent = daysToAnniv;
-  document.getElementById('ringText').textContent =
-    `第 ${yearNum} 年已走过 ${Math.round(pct * 100)}%，再过 ${daysToAnniv} 天迎来 ${yearNum} 周年 🎊`;
-  document.getElementById('ringTitle').innerHTML = `💫 距离 ${yearNum} 周年纪念日`;
+  if (daysToAnniv === 0) {
+    document.getElementById('ringTitle').innerHTML = `🎉 今天就是 ${yearNum} 周年纪念日！`;
+    document.getElementById('ringText').textContent = `一起走过了 ${yearNum} 年，还要一起走更远 💕`;
+  } else {
+    document.getElementById('ringText').textContent =
+      `第 ${yearNum} 年已走过 ${Math.round(pct * 100)}%，再过 ${daysToAnniv} 天迎来 ${yearNum} 周年 🎊`;
+    document.getElementById('ringTitle').innerHTML = `💫 距离 ${yearNum} 周年纪念日`;
+  }
 
   // Next anniversary card — get from Supabase or default
   const { data: anniversaries } = await sb.from('anniversaries').select('*');
@@ -946,7 +952,7 @@ async function initHome() {
     .map(a => {
       const d = new Date(a.date + 'T00:00:00');
       const thisYear = new Date(now.getFullYear(), d.getMonth(), d.getDate());
-      if (thisYear < now) thisYear.setFullYear(now.getFullYear() + 1);
+      if (thisYear < today) thisYear.setFullYear(now.getFullYear() + 1);
       return { ...a, next: thisYear, diff: daysBetween(now, thisYear) };
     })
     .sort((a, b) => a.diff - b.diff);
@@ -955,16 +961,17 @@ async function initHome() {
     const n = upcomingList[0];
     document.getElementById('nextAnniName').textContent = n.name;
     document.getElementById('nextAnniDate').textContent = fmt(n.next).replace(/-/g, '/');
-    document.getElementById('nextAnniDays').textContent = n.diff + ' 天';
+    document.getElementById('nextAnniDays').textContent = n.diff === 0 ? '今天！🎂' : n.diff + ' 天';
   } else {
     // default: compute next anniversary from START_DATE
     const nm = START_DATE.getMonth(), nd = START_DATE.getDate();
     let defNext = new Date(now.getFullYear(), nm, nd);
-    if (defNext <= now) defNext.setFullYear(defNext.getFullYear() + 1);
+    if (defNext < today) defNext.setFullYear(defNext.getFullYear() + 1);
     const defYearNum = defNext.getFullYear() - START_DATE.getFullYear();
     document.getElementById('nextAnniName').textContent = `${defYearNum} 周年纪念日`;
     document.getElementById('nextAnniDate').textContent = fmt(defNext).replace(/-/g, '/');
-    document.getElementById('nextAnniDays').textContent = daysBetween(now, defNext) + ' 天';
+    const defaultDays = daysBetween(now, defNext);
+    document.getElementById('nextAnniDays').textContent = defaultDays === 0 ? '今天！🎂' : defaultDays + ' 天';
   }
 
   // Daily quotes pool
