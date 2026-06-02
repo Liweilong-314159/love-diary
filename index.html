@@ -825,8 +825,10 @@
 const START_DATE = new Date('2023-06-10T00:00:00');
 
 function daysBetween(a, b) {
-  const ms = Math.abs(b - a);
-  return Math.floor(ms / 86400000);
+  // Normalize to midnight to avoid time-of-day errors
+  const da = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  const db = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round(Math.abs(db - da) / 86400000);
 }
 
 function fmt(d) {
